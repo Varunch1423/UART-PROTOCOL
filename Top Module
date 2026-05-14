@@ -1,0 +1,63 @@
+module top(
+    input clk,
+    input reset,
+    input t_enable, 
+    input [7:0] data_in,
+    input rx,
+    output tx,
+    output busy_led,
+    output rx_done_led,
+    output [7:0] data_out_leds
+);
+
+    wire t, s;
+    wire rx_done;
+    wire [7:0] data_out;
+
+    
+    reg t_enable_d;
+    wire t_enable_pulse;
+
+    always @(posedge clk) begin
+        if (reset)
+            t_enable_d <= 0;
+        else
+            t_enable_d <= t_enable;
+    end
+
+    assign t_enable_pulse = t_enable & ~t_enable_d;
+
+
+    baud_rate_generator brg(
+        .clk(clk),
+        .reset(reset),
+        .t(t),
+        .s(s)
+    );
+
+    
+    transmitter tx_unit(
+        .clk(clk),
+        .reset(reset),
+        .data_in(data_in),
+        .t_enable(t_enable_pulse), 
+        .t(t),
+        .tx(tx),
+        .busy_out(busy_led)
+    );
+
+    
+    receiver rx_unit(
+        .clk(clk),
+        .reset(reset),
+        .rx(rx),
+        .s(s),
+        .data_out(data_out),
+        .rx_done(rx_done)
+    );
+
+    
+    assign rx_done_led = rx_done;
+    assign data_out_leds = data_out;
+
+endmodule
