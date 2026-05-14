@@ -1,0 +1,78 @@
+module transmitter(
+    input clk,
+    input reset,
+    input [7:0] data_in,
+    input t_enable, 
+    input t, 
+    output reg tx,
+    output busy_out
+);
+    localparam IDLE = 2'b00,
+               START = 2'b01,
+               DATA = 2'b10,
+               STOP = 2'b11;
+
+    reg [2:0] count; 
+    reg [1:0] state;
+    reg busy;
+    reg start_flag;
+
+    assign busy_out = busy;
+
+    
+    always @(posedge clk) begin
+        if (reset)
+            start_flag <= 1'b0;
+        else if (t_enable && !busy)
+            start_flag <= 1'b1;
+        else if (state == START && t)
+            start_flag <= 1'b0;
+    end
+
+
+    always @(posedge clk) begin
+        if (reset) begin
+            tx <= 1'b1;
+            count <= 3'd0;
+            state <= IDLE;
+            busy <= 1'b0;
+        end
+        else if (t) begin
+            case (state)
+
+                IDLE: begin
+                    tx <= 1'b1; 
+                    if (start_flag) begin
+                        state <= START;
+                        busy <= 1'b1;
+                        count <= 3'd0;
+                    end
+                end
+
+                START: begin
+                    tx <= 1'b0; 
+                    state <= DATA;
+                end
+
+                DATA: begin
+                    tx <= data_in[count]; 
+                    count <= count + 1'b1;
+                    if (count == 3'd7)
+                        state <= STOP;
+                end
+
+                STOP: begin
+                    tx <= 1'b1; 
+                    state <= IDLE;
+                    busy <= 1'b0;
+                end
+
+                default: begin
+                    tx <= 1'b1;
+                    state <= IDLE;
+                end
+
+            endcase
+        end
+    end
+endmodule
