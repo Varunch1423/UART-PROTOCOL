@@ -1,0 +1,85 @@
+module receiver(
+    input clk,
+    input reset,
+    input rx,
+    input s, 
+    output reg [7:0] data_out,
+    output reg rx_done 
+);
+    localparam IDLE = 2'b00,
+               START = 2'b01,
+               DATA = 2'b10,
+               STOP = 2'b11;
+
+    reg [1:0] state;
+    reg [3:0] sample; 
+    reg [2:0] index; 
+
+    always @(posedge clk) begin
+        if (reset) begin
+            state <= IDLE;
+            sample <= 4'd0;
+            index <= 3'd0;
+            data_out <= 8'd0;
+            rx_done <= 1'b0;
+        end
+        else begin
+            rx_done <= 1'b0; 
+
+            if (s) begin
+                case (state)
+
+                    
+                    IDLE: begin
+                        sample <= 4'd0;
+                        index <= 3'd0;
+                        if (!rx) 
+                            state <= START;
+                    end
+
+                    
+                    START: begin
+                        if (sample == 4'd7) begin
+                            if (!rx) begin 
+                                sample <= 4'd0;
+                                state <= DATA;
+                            end else begin
+                                state <= IDLE; 
+                            end
+                        end else
+                            sample <= sample + 1'b1;
+                    end
+
+                    
+                    DATA: begin
+                        if (sample == 4'd7)
+                            data_out[index] <= rx; 
+
+                        if (sample == 4'd15) begin
+                            sample <= 4'd0;
+                            if (index == 3'd7)
+                                state <= STOP; 
+                            else
+                                index <= index + 1'b1;
+                        end else
+                            sample <= sample + 1'b1;
+                    end
+
+                    
+                    STOP: begin
+                        if (sample == 4'd7) begin
+                            if (rx) 
+                                rx_done <= 1'b1;
+                            state <= IDLE;
+                            sample <= 4'd0;
+                        end else
+                            sample <= sample + 1'b1;
+                    end
+
+                    default: state <= IDLE;
+
+                endcase
+            end
+        end
+    end
+endmodule
