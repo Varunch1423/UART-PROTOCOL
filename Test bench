@@ -1,0 +1,86 @@
+module top_tb;
+
+    reg clk;
+    reg reset;
+    reg t_enable;
+    reg [7:0] data_in;
+
+    wire tx;
+    wire busy_led;
+    wire rx_done_led;
+    wire [7:0] data_out_leds;
+
+    
+    wire rx;
+
+    
+    assign rx = tx;
+
+    
+    top uut (
+        .clk(clk),
+        .reset(reset),
+        .t_enable(t_enable),
+        .data_in(data_in),
+        .rx(rx),
+        .tx(tx),
+        .busy_led(busy_led),
+        .rx_done_led(rx_done_led),
+        .data_out_leds(data_out_leds)
+    );
+
+    
+    initial begin
+        clk = 0;
+        forever #5 clk = ~clk;
+    end
+
+    
+    initial begin
+        
+        $dumpfile("uart_waveform.vcd");
+        $dumpvars(0, top_tb);
+
+        
+        reset = 1;
+        t_enable = 0;
+        data_in = 8'b00000000;
+
+        
+        #100;
+        reset = 0;
+
+        
+        #100;
+
+        
+        data_in = 8'b10110101;
+        t_enable = 1;
+
+        #10;
+        t_enable = 0;
+
+        
+        #12000000;
+
+        
+        data_in = 8'b11001010;
+        t_enable = 1;
+
+        #10;
+        t_enable = 0;
+
+        
+        #12000000;
+
+        
+        $finish;
+    end
+
+    
+    initial begin
+        $monitor("TIME=%0t | TX=%b | BUSY=%b | RX_DONE=%b | DATA_OUT=%b",
+                  $time, tx, busy_led, rx_done_led, data_out_leds);
+    end
+
+endmodule
